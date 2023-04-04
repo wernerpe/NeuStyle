@@ -13,6 +13,7 @@ MODELS: Dict[str, nn.Module] = {
     "neus": ModelNeuS,
 }
 
+
 class ModelWrapper(LightningModule):
     logger: Optional[WandbLogger]
     model: nn.Module
@@ -26,29 +27,32 @@ class ModelWrapper(LightningModule):
         self.cfg = cfg
 
         # Set up the model.
-        model_name, = cfg.model.keys()
+        (model_name,) = cfg.model.keys()
         self.model = MODELS[model_name](cfg.model[model_name])
 
     def training_step(self, batch, batch_idx):
+        # Generate training rays from the images.
         num_rays = self.cfg.training.num_rays
-        origins, directions = sample_training_rays(
+        origins, directions, color = sample_training_rays(
+            batch["image"],
             batch["extrinsics"],
             batch["intrinsics"],
             num_rays,
         )
 
-        self.model(
+        output = self.model(
             origins,
             directions,
             repeat(batch["near"], "b -> b r", r=num_rays),
             repeat(batch["far"], "b -> b r", r=num_rays),
         )
-        a = 1
-        a = 1
+        loss = (output["color"] - color[..., :3]) ** 2
 
+        return loss.mean()
 
     def validation_step(self, batch, batch_idx):
-        pass
+        a = 1
+        a = 1
 
     def configure_optimizers(self):
         optimizer = optim.Adam(self.parameters(), lr=self.cfg.training.optim.lr)

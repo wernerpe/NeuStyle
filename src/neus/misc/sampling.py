@@ -9,18 +9,29 @@ from .geometry import get_world_rays
 
 
 def sample_training_rays(
+    image: Float[Tensor, "batch channel height width"],
     extrinsics: Float[Tensor, "batch 4 4"],
     intrinsics: Float[Tensor, "batch 3 3"],
     num_rays: int,
 ) -> Tuple[
     Float[Tensor, "batch ray 3"],  # origins
     Float[Tensor, "batch ray 3"],  # directions
+    Float[Tensor, "batch ray channel"],  # sampled color
 ]:
-    batch, _, _ = extrinsics.shape
+    # Sample coordinates.
+    b, _, h, w = image.shape
     coordinates = torch.rand(
-        (batch, num_rays, 2), dtype=torch.float32, device=extrinsics.device
+        (b, num_rays, 2), dtype=torch.float32, device=extrinsics.device
     )
-    return get_world_rays(coordinates, extrinsics, intrinsics)
+
+    # Sample color at those coordinates. Pixel centers are at (x.5, y.5).
+    x, y = coordinates.unbind(dim=-1)
+    row = (x * w).type(torch.int64)
+    col = (y * h).type(torch.int64)
+    batch_index = rearrange(torch.arange(b, device=image.device), "b -> b ()")
+    color = image[batch_index, :, row, col]
+
+    return (*get_world_rays(coordinates, extrinsics, intrinsics), color)
 
 
 def sample_along_rays(
@@ -29,7 +40,10 @@ def sample_along_rays(
     near: Float[Tensor, "batch ray"],
     far: Float[Tensor, "batch ray"],
     num_samples: int,
-) -> Float[Tensor, "batch ray sample 3"]:
+) -> Tuple[
+    Float[Tensor, "batch ray sample"],  # depths
+    Float[Tensor, "batch ray sample 3"],  # xyz coordinates
+]:
     # Generate evenly spaced samples along the ray.
     spacing = torch.linspace(0, 1, num_samples, device=far.device, dtype=torch.float32)
 
@@ -41,4 +55,5 @@ def sample_along_rays(
     far = rearrange(far, "b r -> b r () ()")
 
     # Compute point locations along rays.
-    return origins + directions * (near + spacing * (far - near))
+    depths = near + spacing * (far - near)
+    return depths[..., 0], origins + directions * depths
