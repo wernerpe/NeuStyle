@@ -2,10 +2,30 @@ from typing import Tuple
 
 import torch
 from einops import rearrange
-from jaxtyping import Float
+from jaxtyping import Float, Int64
 from torch import Tensor
 
 from .geometry import get_world_rays
+
+
+def sample_image_grid(
+    height: int,
+    width: int,
+    device: torch.device = torch.device("cpu"),
+) -> Tuple[Float[Tensor, "H W 2"], Int64[Tensor, "H W 2"]]:
+    """Get normalized (range 0 to 1) xy coordinates and row-col indices for an image."""
+
+    # Each entry is a pixel-wise (row, col) coordinate.
+    row = torch.arange(height, device=device)
+    col = torch.arange(width, device=device)
+    selector = torch.stack(torch.meshgrid(row, col, indexing="ij"), dim=-1)
+
+    # Each entry is a spatial (x, y) coordinate in the range (0, 1).
+    x = (col + 0.5) / width
+    y = (row + 0.5) / height
+    coordinates = torch.stack(torch.meshgrid(x, y, indexing="xy"), dim=-1)
+
+    return coordinates, selector
 
 
 def sample_training_rays(

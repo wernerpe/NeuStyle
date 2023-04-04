@@ -1,12 +1,17 @@
-from typing import Dict, Optional
+from typing import Dict, Optional, Tuple
 
-from einops import repeat
+import torch
+import torch.nn.functional as F
+from einops import pack, rearrange, repeat
+from jaxtyping import Float
 from omegaconf import DictConfig
 from pytorch_lightning import LightningModule
 from pytorch_lightning.loggers.wandb import WandbLogger
-from torch import nn, optim
+from torch import Tensor, nn, optim
 
-from ..misc.sampling import sample_training_rays
+from ..misc.collation import collate
+from ..misc.geometry import get_world_rays
+from ..misc.sampling import sample_image_grid, sample_training_rays
 from .ModelNeuS import ModelNeuS
 
 MODELS: Dict[str, nn.Module] = {
@@ -50,9 +55,72 @@ class ModelWrapper(LightningModule):
 
         return loss.mean()
 
+    @torch.no_grad()
     def validation_step(self, batch, batch_idx):
-        a = 1
-        a = 1
+        scale = self.cfg.validation.preview_image_scale
+        _, _, h, w = batch["image"].shape
+        h = int(h * scale)
+        w = int(w * scale)
+        coordinates, predicted = self.render_image(
+            batch["extrinsics"],
+            batch["intrinsics"],
+            batch["near"],
+            batch["far"],
+            (h, w),
+        )
+
+        # Sample ground-truth pixel locations.
+        ground_truth = F.grid_sample(
+            batch["image"],
+            coordinates * 2 - 1,
+            mode="bilinear",
+            align_corners=False,
+        )
+
+        # Log a side-by-side comparison of the predicted and ground-truth images.
+        comparison = pack([predicted["color"], ground_truth[:, :3]], "b c h *")[0]
+        self.logger.log_image(
+            "comparison",
+            [rearrange(comparison, "b c h w -> (b h) w c").cpu().numpy()],
+        )
+
+    def render_image(
+        self,
+        extrinsics: Float[Tensor, "batch 4 4"],
+        intrinsics: Float[Tensor, "batch 3 3"],
+        near: Float[Tensor, " batch"],
+        far: Float[Tensor, " batch"],
+        height_width: Tuple[int, int],
+    ) -> Tuple[Float[Tensor, "batch height width xy"], dict]:
+        # Generate image rays.
+        h, w = height_width
+        b, _, _ = extrinsics.shape
+        grid_coordinates, _ = sample_image_grid(h, w, extrinsics.device)
+        grid_coordinates = repeat(grid_coordinates, "h w xy -> b h w xy", b=b)
+        origins, directions = get_world_rays(
+            rearrange(grid_coordinates, "b h w xy -> b (h w) xy"),
+            extrinsics,
+            intrinsics,
+        )
+
+        # Render image in batches.
+        num_rays = self.cfg.validation.num_rays
+        bundle = zip(origins.split(num_rays, dim=1), directions.split(num_rays, dim=1))
+        output = [
+            self.model(
+                origins_batch,
+                directions_batch,
+                repeat(near, "b -> b r", r=origins_batch.shape[1]),
+                repeat(far, "b -> b r", r=origins_batch.shape[1]),
+            )
+            for origins_batch, directions_batch in bundle
+        ]
+        return grid_coordinates, collate(
+            output,
+            lambda x: rearrange(
+                torch.cat(x, dim=1), "b (h w) ... -> b ... h w", h=h, w=w
+            ),
+        )
 
     def configure_optimizers(self):
         optimizer = optim.Adam(self.parameters(), lr=self.cfg.training.optim.lr)

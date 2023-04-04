@@ -3,6 +3,7 @@ from pytorch_lightning import LightningDataModule
 from torch.utils.data import DataLoader
 
 from .DatasetNeRFSynthetic import DatasetNeRFSynthetic
+from .ValidationWrapper import ValidationWrapper
 
 DATASETS = {
     "nerf_synthetic": DatasetNeRFSynthetic,
@@ -31,7 +32,10 @@ class DataModule(LightningDataModule):
 
     def val_dataloader(self):
         return DataLoader(
-            DATASETS[self.dataset_name](self.cfg.dataset[self.dataset_name], "val"),
+            ValidationWrapper(
+                DATASETS[self.dataset_name](self.cfg.dataset[self.dataset_name], "val"),
+                1,
+            ),
             self.cfg.validation.batch_size,
             num_workers=self.cfg.validation.num_workers,
         )
