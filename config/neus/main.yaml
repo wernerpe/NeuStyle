@@ -10,14 +10,14 @@ wandb:
 
 validation:
   batch_size: 4
-  num_rays: 2048
+  num_rays: 256
   num_workers: 0
   interval: 256
   preview_image_scale: 0.2
 
 training:
   batch_size: 4
-  num_rays: 2048
+  num_rays: 256
   num_workers: 0
   optim:
     lr: 4e-3

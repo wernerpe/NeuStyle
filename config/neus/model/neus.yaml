@@ -1,23 +1,28 @@
 neus:
-  positional_encoding:
-    num_frequencies: 6
+  sdf_network:
+    positional_encoding:
+      num_frequencies: 6
+      d_in: 3
+      largest_period: 8.0
+      include_input: true
     d_in: 3
-    largest_period: 8.0
-    include_input: true
-  # sdf_network:
-  #   positional_encoding:
-  #     num_frequencies: 6
-  #     in_channels: 3
-  #     largest_period: 8.0
-  #     include_input: true
-  #   d_out: 257
-  #   d_in: 3
-  #   d_hidden: 256
-  #   n_layers: 8
-  #   skip_in: [4]
-  #   bias: 0.5
-  #   scale: 3.0
-  #   geometric_init: true
-  #   weight_norm: true
+    d_out: 257
+    d_hidden: 256
+    n_layers: 8
+    skip_in: [4]
+    bias: 0.5
+    scale: 3.0
+    geometric_init: false
+    weight_norm: true
+  color_network:
+    positional_encoding:
+      num_frequencies: 4
+      d_in: 3
+      largest_period: 2.0
+      include_input: true
+    d_hidden: 256
+    d_feature: 256
+    n_hidden_layers: 3
+    weight_norm: true
 
   num_coarse_samples: 64
