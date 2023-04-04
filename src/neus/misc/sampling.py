@@ -46,8 +46,8 @@ def sample_training_rays(
 
     # Sample color at those coordinates. Pixel centers are at (x.5, y.5).
     x, y = coordinates.unbind(dim=-1)
-    row = (x * w).type(torch.int64)
-    col = (y * h).type(torch.int64)
+    row = (y * h).type(torch.int64)
+    col = (x * w).type(torch.int64)
     batch_index = rearrange(torch.arange(b, device=image.device), "b -> b ()")
     color = image[batch_index, :, row, col]
 
