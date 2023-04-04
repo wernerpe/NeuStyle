@@ -1,0 +1,22 @@
+defaults:
+  - dataset: nerf_synthetic
+
+wandb:
+  project: styleneus
+  name: styleneus
+  entity: charatan
+  mode: offline
+
+validation:
+  batch_size: 4
+  num_rays: 2048
+  interval: 1000
+
+training:
+  batch_size: 4
+  num_rays: 2048
+  optim:
+    lr: 4e-3
+  checkpointing:
+    every_n_train_steps: 5000
+    save_top_k: -1
