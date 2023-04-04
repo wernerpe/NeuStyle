@@ -10,7 +10,19 @@
             "request": "launch",
             "module": "src.neus.main",
             "console": "integratedTerminal",
-            "justMyCode": false,
+            "justMyCode": true,
+            "args": [],
+            "env": {
+                "CUDA_VISIBLE_DEVICES": "0",
+            }
+        },
+        {
+            "name": "Visualize Epipolar Lines",
+            "type": "python",
+            "request": "launch",
+            "module": "src.neus.scripts.visualize_epipolar_lines",
+            "console": "integratedTerminal",
+            "justMyCode": true,
             "args": [],
             "env": {
                 "CUDA_VISIBLE_DEVICES": "0",

@@ -12,7 +12,7 @@ from torch import Tensor
 from torch.utils.data import Dataset
 from tqdm import tqdm
 
-from .types import Stage
+from .types import Example, Stage
 
 
 class DatasetNeRFSynthetic(Dataset):
@@ -59,8 +59,13 @@ class DatasetNeRFSynthetic(Dataset):
     def num_images(self) -> int:
         return self.images.shape[0]
 
-    def __getitem__(self, index: int):
-        return self.images[index % self.num_images]
+    def __getitem__(self, index: int) -> Example:
+        index = index % self.num_images
+        return {
+            "image": self.images[index],
+            "extrinsics": self.extrinsics[index],
+            "intrinsics": self.intrinsics[index],
+        }
 
     def __len__(self) -> int:
         return self.num_images * self.cfg_dataset.repetitions_per_epoch

@@ -25,6 +25,7 @@ class DataModule(LightningDataModule):
         return DataLoader(
             DATASETS[self.dataset_name](self.cfg.dataset[self.dataset_name], "train"),
             self.cfg.training.batch_size,
+            shuffle=True,
         )
 
     def val_dataloader(self):
