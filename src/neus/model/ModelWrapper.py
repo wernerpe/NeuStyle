@@ -23,7 +23,7 @@ class ModelWrapper(LightningModule):
     def training_step(self, batch, batch_idx):
         pass
 
-    def validation_step(self, batch, batch_idx: int):
+    def validation_step(self, batch, batch_idx):
         pass
 
     def configure_optimizers(self):

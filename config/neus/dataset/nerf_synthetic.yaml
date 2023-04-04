@@ -1,1 +1,4 @@
-nerf_synthetic: {}
+nerf_synthetic:
+  path: data/nerf_synthetic
+  scene: chair
+  repetitions_per_epoch: 1000

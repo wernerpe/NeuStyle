@@ -9,3 +9,4 @@ jaxtyping
 beartype
 wandb
 einops
+Pillow
