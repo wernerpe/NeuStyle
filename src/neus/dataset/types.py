@@ -10,3 +10,5 @@ class Example(TypedDict):
     image: Float[Tensor, "channel height width"]
     extrinsics: Float[Tensor, "4 4"]
     intrinsics: Float[Tensor, "3 3"]
+    near: Float[Tensor, ""]
+    far: Float[Tensor, ""]

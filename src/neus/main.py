@@ -16,7 +16,6 @@ with install_import_hook(
     ("beartype", "beartype"),
 ):
     from src.neus.dataset.DataModule import DataModule
-    from src.neus.model.ModelNeuS import ModelNeuS
     from src.neus.model.ModelWrapper import ModelWrapper
 
 
@@ -74,7 +73,7 @@ def train(cfg: DictConfig):
         val_check_interval=cfg.validation.interval,
     )
     trainer.fit(
-        ModelWrapper(cfg, ModelNeuS(cfg)),
+        ModelWrapper(cfg),
         datamodule=DataModule(cfg),
     )
 

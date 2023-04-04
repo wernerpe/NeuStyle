@@ -1,5 +1,6 @@
 defaults:
   - dataset: nerf_synthetic
+  - model: neus
 
 wandb:
   project: styleneus
@@ -10,11 +11,13 @@ wandb:
 validation:
   batch_size: 4
   num_rays: 2048
+  num_workers: 0
   interval: 1000
 
 training:
   batch_size: 4
   num_rays: 2048
+  num_workers: 0
   optim:
     lr: 4e-3
   checkpointing:

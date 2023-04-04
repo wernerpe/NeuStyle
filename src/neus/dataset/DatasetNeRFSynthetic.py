@@ -38,7 +38,7 @@ class DatasetNeRFSynthetic(Dataset):
         # Read the images and extrinsics.
         images = []
         extrinsics = []
-        for frame in tqdm(metadata["frames"], "Loading frames"):
+        for frame in tqdm(metadata["frames"], f"Loading {stage} frames"):
             extrinsics.append(
                 torch.tensor(frame["transform_matrix"], dtype=torch.float32)
                 @ conversion
@@ -65,6 +65,9 @@ class DatasetNeRFSynthetic(Dataset):
             "image": self.images[index],
             "extrinsics": self.extrinsics[index],
             "intrinsics": self.intrinsics[index],
+            # Near/far planes from the original NeRF implementation.
+            "near": torch.tensor(2.0),
+            "far": torch.tensor(6.0),
         }
 
     def __len__(self) -> int:
