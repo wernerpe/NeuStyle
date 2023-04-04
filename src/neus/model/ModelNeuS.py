@@ -40,7 +40,7 @@ class ModelNeuS(nn.Module):
         density, color = self.placeholder(sample_locations).split((1, 3), dim=-1)
         weights = compute_volume_integral_weights(depths, density[..., 0])
         return {
-            "color": einsum(weights, color, "b r s, b r s c -> b r c"),
+            "color": einsum(weights, color.sigmoid(), "b r s, b r s c -> b r c"),
             "depth": einsum(weights, depths, "b r s, b r s -> b r"),
             "alpha": einsum(weights, "b r s -> b r"),
         }
