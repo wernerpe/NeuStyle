@@ -96,6 +96,7 @@ class SDFNetwork(nn.Module):
             "feature": x[..., 1:],
         }
 
+    @torch.set_grad_enabled(True)
     def gradient(self, points: Float[Tensor, "*batch 3"]):
         points.requires_grad_(True)
         signed_distance = self.sdf(points)["sdf"]

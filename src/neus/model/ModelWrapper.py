@@ -60,7 +60,6 @@ class ModelWrapper(LightningModule):
 
         return loss_color + loss_eikonal
 
-    @torch.no_grad()
     def validation_step(self, batch, batch_idx):
         if self.cfg.wandb.mode == "disabled":
             return
