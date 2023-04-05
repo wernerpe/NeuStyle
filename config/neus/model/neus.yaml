@@ -12,7 +12,7 @@ neus:
     skip_in: [4]
     bias: 0.5
     scale: 3.0
-    geometric_init: false
+    geometric_init: true
     weight_norm: true
   color_network:
     positional_encoding:
