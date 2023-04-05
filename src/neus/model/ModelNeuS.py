@@ -30,5 +30,12 @@ class ModelNeuS(nn.Module):
         directions: Float[Tensor, "batch ray 3"],
         near: Float[Tensor, "batch ray"],
         far: Float[Tensor, "batch ray"],
+        global_step: int,
     ):
-        return self.renderer.render(origins, directions, near, far, 0.5)
+        return self.renderer.render(
+            origins,
+            directions,
+            near,
+            far,
+            min(1.0, global_step / self.cfg_model.cosine_annealing_end),
+        )

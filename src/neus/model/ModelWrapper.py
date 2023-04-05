@@ -51,6 +51,7 @@ class ModelWrapper(LightningModule):
             directions,
             repeat(batch["near"], "b -> b r", r=num_rays),
             repeat(batch["far"], "b -> b r", r=num_rays),
+            self.global_step,
         )
 
         loss_color = ((output["color"] - color[..., :3]) ** 2).mean()
@@ -121,6 +122,7 @@ class ModelWrapper(LightningModule):
                     directions_batch,
                     repeat(near, "b -> b r", r=origins_batch.shape[1]),
                     repeat(far, "b -> b r", r=origins_batch.shape[1]),
+                    self.global_step,
                 ),
                 Tensor,
                 lambda x: x.cpu(),

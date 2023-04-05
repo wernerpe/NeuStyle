@@ -28,3 +28,4 @@ neus:
     initial_value: 0.3
   renderer:
     num_samples: 64
+  cosine_annealing_end: 50_000
