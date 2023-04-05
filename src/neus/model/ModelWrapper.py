@@ -57,6 +57,9 @@ class ModelWrapper(LightningModule):
 
     @torch.no_grad()
     def validation_step(self, batch, batch_idx):
+        if self.cfg.wandb.mode == "disabled":
+            return
+
         scale = self.cfg.validation.preview_image_scale
         _, _, h, w = batch["image"].shape
         h = int(h * scale)
