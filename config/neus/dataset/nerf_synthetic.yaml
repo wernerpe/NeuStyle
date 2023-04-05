@@ -2,3 +2,4 @@ nerf_synthetic:
   path: data/nerf_synthetic
   scene: chair
   repetitions_per_epoch: 1000
+  scale_factor: 0.3

@@ -46,6 +46,7 @@ class DatasetNeRFSynthetic(Dataset):
             images.append(transforms(Image.open(path / f"{frame['file_path']}.png")))
         self.images = torch.stack(images)
         self.extrinsics = torch.stack(extrinsics)
+        self.extrinsics[:, :3, 3] *= cfg_dataset.scale_factor
 
         # Convert the intrinsics to (normalized) OpenCV style.
         camera_angle_x = float(metadata["camera_angle_x"])
@@ -66,8 +67,8 @@ class DatasetNeRFSynthetic(Dataset):
             "extrinsics": self.extrinsics[index],
             "intrinsics": self.intrinsics[index],
             # Near/far planes from the original NeRF implementation.
-            "near": torch.tensor(2.0),
-            "far": torch.tensor(6.0),
+            "near": torch.tensor(2.0 * self.cfg_dataset.scale_factor),
+            "far": torch.tensor(6.0 * self.cfg_dataset.scale_factor),
         }
 
     def __len__(self) -> int:
