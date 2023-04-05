@@ -13,6 +13,7 @@ from torch import Tensor, nn, optim
 from ..misc.collation import collate
 from ..misc.geometry import get_world_rays
 from ..misc.sampling import sample_image_grid, sample_training_rays
+from ..visualization.color_map import apply_color_map_to_image
 from .ModelNeuS import ModelNeuS
 
 MODELS: Dict[str, nn.Module] = {
@@ -86,11 +87,26 @@ class ModelWrapper(LightningModule):
             align_corners=False,
         ).cpu()
 
-        # Log a side-by-side comparison of the predicted and ground-truth images.
-        comparison = pack([predicted["color"], ground_truth[:, :3]], "b c h *")[0]
+        # First row of visualization: RGB comparison.
+        row_rgb = pack([predicted["color"], ground_truth[:, :3]], "b c h *")[0]
+
+        # Second row of visualization: mask comaprison.
+        row_mask = pack([predicted["alpha"], ground_truth[:, 3]], "b h *")[0]
+        row_mask = repeat(row_mask, "b h w -> b c h w", c=3)
+
+        # Third row of visualization: depth and normals.
+        depth = predicted["depth"]
+        depth = (depth - depth.min()) / (depth.max() - depth.min() + 1e-10)
+        depth = apply_color_map_to_image(depth)
+        normals = predicted["normal"] * 0.5 + 0.5
+        row_extra = pack([depth, normals], "b c h *")[0]
+
+        visualization = pack([row_rgb, row_mask, row_extra], "b c * w")[0]
+        visualization = visualization.clip(min=0, max=1)
+
         self.logger.log_image(
             "comparison",
-            [rearrange(comparison, "b c h w -> (b h) w c").cpu().numpy()],
+            [rearrange(visualization, "b c h w -> (b h) w c").cpu().numpy()],
         )
 
     def render_image(
@@ -130,9 +146,13 @@ class ModelWrapper(LightningModule):
             for origins_batch, directions_batch in bundle
         ]
 
-        # Drop everything except for color, alpha, and depth.
+        # Drop elements are aren't image-like.
         output = [
-            {k: v for k, v in batch.items() if k in ("color", "alpha", "depth")}
+            {
+                k: v
+                for k, v in batch.items()
+                if k in ("color", "alpha", "depth", "normal")
+            }
             for batch in output
         ]
 

@@ -47,6 +47,7 @@ class Output(TypedDict):
     color: Float[Tensor, "batch ray 3"]
     depth: Float[Tensor, "batch ray"]
     alpha: Float[Tensor, "batch ray"]
+    normal: Float[Tensor, "batch ray 3"]
     error_eikonal: Float[Tensor, ""]
 
 
@@ -120,9 +121,11 @@ class RendererNeuS:
 
         # Do alpha compositing.
         weights = compute_alpha_compositing_weights(alphas)
+        normals = sdf_gradients / sdf_gradients.norm(dim=-1, keepdim=True)
         return {
             "color": einsum(weights, color, "b r s, b r s c -> b r c"),
             "depth": einsum(weights, depths_middle[..., 0], "b r s, b r s -> b r"),
             "alpha": einsum(weights, "b r s -> b r"),
+            "normal": einsum(weights, normals, "b r s, b r s c -> b r c"),
             "error_eikonal": ((sdf_gradients - 1) ** 2).mean(),
         }
