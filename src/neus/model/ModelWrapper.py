@@ -4,6 +4,7 @@ import torch
 import torch.nn.functional as F
 from einops import pack, rearrange, repeat
 from jaxtyping import Float
+from lightning_fabric.utilities.apply_func import apply_to_collection
 from omegaconf import DictConfig
 from pytorch_lightning import LightningModule
 from pytorch_lightning.loggers.wandb import WandbLogger
@@ -53,7 +54,7 @@ class ModelWrapper(LightningModule):
         )
 
         loss_color = ((output["color"] - color[..., :3]) ** 2).mean()
-        loss_eikonal = 0.1 * ((output["sdf_gradient"] - 1) ** 2).mean()
+        loss_eikonal = 0.1 * output["error_eikonal"]
 
         self.log("train/loss_color", loss_color)
         self.log("train/loss_eikonal", loss_eikonal)
@@ -82,7 +83,7 @@ class ModelWrapper(LightningModule):
             coordinates * 2 - 1,
             mode="bilinear",
             align_corners=False,
-        )
+        ).cpu()
 
         # Log a side-by-side comparison of the predicted and ground-truth images.
         comparison = pack([predicted["color"], ground_truth[:, :3]], "b c h *")[0]
@@ -114,14 +115,25 @@ class ModelWrapper(LightningModule):
         num_rays = self.cfg.validation.num_rays
         bundle = zip(origins.split(num_rays, dim=1), directions.split(num_rays, dim=1))
         output = [
-            self.model(
-                origins_batch,
-                directions_batch,
-                repeat(near, "b -> b r", r=origins_batch.shape[1]),
-                repeat(far, "b -> b r", r=origins_batch.shape[1]),
+            apply_to_collection(
+                self.model(
+                    origins_batch,
+                    directions_batch,
+                    repeat(near, "b -> b r", r=origins_batch.shape[1]),
+                    repeat(far, "b -> b r", r=origins_batch.shape[1]),
+                ),
+                Tensor,
+                lambda x: x.cpu(),
             )
             for origins_batch, directions_batch in bundle
         ]
+
+        # Drop everything except for color, alpha, and depth.
+        output = [
+            {k: v for k, v in batch.items() if k in ("color", "alpha", "depth")}
+            for batch in output
+        ]
+
         return grid_coordinates, collate(
             output,
             lambda x: rearrange(
