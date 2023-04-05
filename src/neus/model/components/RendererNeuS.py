@@ -127,5 +127,5 @@ class RendererNeuS:
             "depth": einsum(weights, depths_middle[..., 0], "b r s, b r s -> b r"),
             "alpha": einsum(weights, "b r s -> b r"),
             "normal": einsum(weights, normals, "b r s, b r s c -> b r c"),
-            "error_eikonal": ((sdf_gradients - 1) ** 2).mean(),
+            "error_eikonal": ((sdf_gradients.norm(dim=-1) - 1) ** 2).mean(),
         }
