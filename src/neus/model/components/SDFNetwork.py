@@ -76,35 +76,34 @@ class SDFNetwork(nn.Module):
 
         self.activation = nn.Softplus(beta=100)
 
-    def forward(self, inputs: Float[Tensor, "*batch 3"]):
-        inputs = self.positional_encoding(inputs * self.scale)
+    def sdf(self, points: Float[Tensor, "*batch 3"]):
+        points = self.positional_encoding(points * self.scale)
 
-        x = inputs
+        x = points
         for layer in range(0, self.num_layers - 1):
             lin = getattr(self, "lin" + str(layer))
 
             if layer in self.skip_in:
-                x = torch.cat([x, inputs], dim=-1) / np.sqrt(2)
+                x = torch.cat([x, points], dim=-1) / np.sqrt(2)
 
             x = lin(x)
 
             if layer < self.num_layers - 2:
                 x = self.activation(x)
-        return torch.cat([x[..., :1] / self.scale, x[..., 1:]], dim=-1)
 
-    def sdf(self, x):
-        return self.forward(x)[:, :1]
+        return {
+            "sdf": x[..., 0] / self.scale,
+            "feature": x[..., 1:],
+        }
 
-    def gradient(self, x):
-        x.requires_grad_(True)
-        y = self.sdf(x)
-        d_output = torch.ones_like(y, requires_grad=False, device=y.device)
-        gradients = torch.autograd.grad(
-            outputs=y,
-            inputs=x,
-            grad_outputs=d_output,
+    def gradient(self, points: Float[Tensor, "*batch 3"]):
+        points.requires_grad_(True)
+        signed_distance = self.sdf(points)["sdf"]
+        return torch.autograd.grad(
+            outputs=signed_distance,
+            inputs=points,
+            grad_outputs=torch.ones_like(signed_distance, requires_grad=False),
             create_graph=True,
             retain_graph=True,
             only_inputs=True,
         )[0]
-        return gradients.unsqueeze(1)

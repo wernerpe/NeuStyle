@@ -24,5 +24,7 @@ neus:
     d_feature: 256
     n_hidden_layers: 3
     weight_norm: true
-
-  num_coarse_samples: 64
+  sharpness_network:
+    initial_value: 0.3
+  renderer:
+    num_samples: 64

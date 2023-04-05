@@ -51,9 +51,14 @@ class ModelWrapper(LightningModule):
             repeat(batch["near"], "b -> b r", r=num_rays),
             repeat(batch["far"], "b -> b r", r=num_rays),
         )
-        loss = (output["color"] - color[..., :3]) ** 2
 
-        return loss.mean()
+        loss_color = ((output["color"] - color[..., :3]) ** 2).mean()
+        loss_eikonal = 0.1 * ((output["sdf_gradient"] - 1) ** 2).mean()
+
+        self.log("train/loss_color", loss_color)
+        self.log("train/loss_eikonal", loss_eikonal)
+
+        return loss_color + loss_eikonal
 
     @torch.no_grad()
     def validation_step(self, batch, batch_idx):
