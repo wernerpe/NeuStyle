@@ -22,4 +22,4 @@ def apply_color_map_to_image(
     image: Float[Tensor, "batch height width"],
     color_map: str = "inferno",
 ) -> Float[Tensor, "batch 3 height with"]:
-    return rearrange(apply_color_map(image), "b h w c -> b c h w")
+    return rearrange(apply_color_map(image, color_map), "b h w c -> b c h w")
