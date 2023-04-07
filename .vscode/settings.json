@@ -16,5 +16,6 @@
         "**/Thumbs.db": true,
         "**/__pycache__": true,
         "**/venv": true,
+        "**/lightning_logs": true,
     },
 }
