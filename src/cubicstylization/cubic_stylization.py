@@ -6,27 +6,59 @@ from OpenGL.GLU import *
 import pywavefront
 import numpy as np
 from scipy.sparse import csr_matrix, coo_matrix
+import scipy
 from utils import fitRotationL1, rotdata 
 import pickle
 import igl
 
 
-V, _, N, F, _, _ = igl.read_obj('src/meshes/bunny.obj')
+V, _, N, F, _, _ = igl.read_obj('src/meshes/bunny_lowpoly.obj')
 L = igl.cotmatrix(V,F)
 VA = igl.massmatrix(V,F,igl.MASSMATRIX_TYPE_BARYCENTRIC).diagonal()
 rotdata.F = F.copy()
-rotdata.L = L.copy()
+rotdata.L = csr_matrix(L.copy())
 rotdata.V = V.copy()
 rotdata.N = N.copy()
 rotdata.VA = VA
 RHS_ARAP = igl.arap_rhs(V,F,3, energy = igl.ARAP_ENERGY_TYPE_SPOKES_AND_RIMS)
 
-R, val, rotdata = fitRotationL1(V, rotdata)
+vpin = 10
+tol = 1e-3
+iter = 4
+objHis = []
+UHis = np.zeros((len(V), 3, iter))
 
+U = V.copy()
+bc = U[vpin, :]
+b = np.array([vpin], dtype=np.int32)
+Aeq = csr_matrix((1, rotdata.L.shape[1]))
+Beq = np.zeros((1,3))
+Aeq[0, vpin] = 1
+Beq[0, :] = bc
+
+for it in range(iter):
+    RAll, val, rotdata = fitRotationL1(V, rotdata)
+    # save optimization info
+    objHis.append(val)
+    UHis[:, :, it] = U
+    # global step
+    Rcol = np.reshape(np.transpose(RAll, (2, 0, 1)), (len(V) * 3 * 3, 1))
+    Bcol = RHS_ARAP@Rcol
+    B = np.reshape(Bcol, (int(Bcol.size / 3), 3))
+    UPre = U
+    out = igl.min_quad_with_fixed(rotdata.L / 2, B, b, bc.reshape(1,-1), Aeq, Beq, False )# [], [], ARAPData.preF)
+
+    # stopping criteria
+    dU = np.sqrt(np.sum((U - UPre) ** 2, axis=1))
+    dUV = np.sqrt(np.sum((U - V) ** 2, axis=1))
+    reldV = np.max(dU) / np.max(dUV)
+    print('iter: %d, objective: %d, reldV: %d' % (it, val, reldV))
+    if reldV < tol:
+        break
 
 #COMPUTE L
 COMPUTE_L = False
-scene = pywavefront.Wavefront('src/meshes/bunny.obj', collect_faces=True)
+scene = pywavefront.Wavefront('src/meshes/bunny_lowpoly.obj', collect_faces=True)
 
 scene_box = (scene.vertices[0], scene.vertices[0])
 for vertex in scene.vertices:
@@ -120,9 +152,10 @@ if COMPUTE_L:
         idxs = cotL.nonzero()
         pickle.dump([data, idxs], f)
 else:
-    with open('src/meshes/bunny_cotLap.bin', 'rb') as f:
-        cotL = pickle.load(f)
-        cotL = csr_matrix((cotL[0], cotL[1]))
+        pass
+    #with open('src/meshes/bunny_cotLap.bin', 'rb') as f:
+        #cotL = pickle.load(f)
+        #cotL = csr_matrix((cotL[0], cotL[1]))
 #pickle cotangent weights because takes too long to compute
 
 
@@ -140,7 +173,6 @@ ADMMParams["maxIter_ADMM"] = 100
 Meshdata = {}
 Meshdata["bareas"] = barycentricAreas
 Meshdata["vertexnormlas"] = vertex_normals
-
 
 def Model():
     glPushMatrix()
