@@ -1,6 +1,8 @@
 import numpy as np
 from scipy.sparse import csr_matrix, coo_matrix
 
+# https://github.com/HTDerekLiu/CubicStylization_MATLAB/blob/master for inspiration ~ using the same function structure to minimize chance of bugs
+#Note: FIXME
 
 class RotData:
     def __init__(self):
@@ -95,18 +97,26 @@ def fitRotationL1(U, rotData: RotData):
         rotData.dVList = [None] * nV  # dV spokes and rims
         for ii in range(nV):
             adjF = adjFList[ii]
-            hE = np.column_stack((rotData.F[adjF, [0, 1]], rotData.F[adjF, [1, 2]], rotData.F[adjF, [2, 0]]))
+            first_cols = np.concatenate((rotData.F[adjF, 0],
+                                      rotData.F[adjF, 1],
+                                      rotData.F[adjF, 2]))
+            second_cols = np.concatenate((rotData.F[adjF, 1],
+                                       rotData.F[adjF, 2],
+                                       rotData.F[adjF, 0]))
+            hE = np.column_stack( (first_cols, second_cols))
             idx = np.ravel_multi_index((hE[:, 0], hE[:, 1]), rotData.L.shape)
 
             rotData.hEList[ii] = hE
-            rotData.WList[ii] = np.diag(rotData.L.ravel()[idx])
+            rotData.WList[ii] = np.diag(np.array(rotData.L[hE[:,0], hE[:,1]]).squeeze())
             rotData.dVList[ii] = (rotData.V[hE[:, 1], :] - rotData.V[hE[:, 0], :]).T
 
     # start rotation fitting with ADMM
     for ii in range(nV):
+        if ii%500 ==0:
+            print('rotation fitting: ', ii,'/', nV)
         # warm start parameters
-        z = rotData.zAll[:, ii]
-        u = rotData.uAll[:, ii]
+        z = rotData.zAll[:, ii].reshape(-1,1)
+        u = rotData.uAll[:, ii].reshape(-1,1)
         n = rotData.N[ii, :].reshape(-1, 1)
         rho = rotData.rhoAll[ii]
 
@@ -120,7 +130,7 @@ def fitRotationL1(U, rotData: RotData):
         # ADMM
         for k in range(rotData.maxIter_ADMM):
             # R step
-            S = Spre + (rho * n @ (z - u).T)
+            S = Spre + (rho * np.outer(n, (z - u)))
             R = fit_rotation(S)
 
             # z step
@@ -148,8 +158,8 @@ def fitRotationL1(U, rotData: RotData):
             eps_dual = np.sqrt(numEle) * rotData.ABSTOL + rotData.RELTOL * np.linalg.norm(rho * u)
             if r_norm < eps_pri and s_norm < eps_dual:
                 # save parameters for future warm start
-                rotData.zAll[:, ii] = z
-                rotData.uAll[:, ii] = u
+                rotData.zAll[:, ii] = z.squeeze()
+                rotData.uAll[:, ii] = u.squeeze()
                 rotData.rhoAll[ii] = rho
                 RAll[:, :, ii] = R
 

@@ -12,13 +12,16 @@ import igl
 
 
 V, _, N, F, _, _ = igl.read_obj('src/meshes/bunny.obj')
-
 L = igl.cotmatrix(V,F)
-
+VA = igl.massmatrix(V,F,igl.MASSMATRIX_TYPE_BARYCENTRIC).diagonal()
+rotdata.F = F.copy()
+rotdata.L = L.copy()
+rotdata.V = V.copy()
+rotdata.N = N.copy()
+rotdata.VA = VA
 RHS_ARAP = igl.arap_rhs(V,F,3, energy = igl.ARAP_ENERGY_TYPE_SPOKES_AND_RIMS)
 
-# https://github.com/HTDerekLiu/CubicStylization_MATLAB/blob/master/utils/fitRotationL1.m for inspiration and chatgpt translation
-#Note: FIXME
+R, val, rotdata = fitRotationL1(V, rotdata)
 
 
 #COMPUTE L
