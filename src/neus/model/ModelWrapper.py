@@ -109,6 +109,10 @@ class ModelWrapper(LightningModule):
             [rearrange(visualization, "b c h w -> (b h) w c").cpu().numpy()],
         )
 
+        # Dump a mesh.
+        mesh = self.model.generate_mesh()
+        mesh.export("latest_mesh.stl")
+
     def render_image(
         self,
         extrinsics: Float[Tensor, "batch 4 4"],

@@ -165,3 +165,4 @@ data
 # Outputs from NeuS
 outputs
 lightning_logs
+*.stl
