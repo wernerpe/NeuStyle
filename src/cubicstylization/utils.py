@@ -2,7 +2,6 @@ import numpy as np
 from scipy.sparse import csr_matrix, coo_matrix
 import scipy
 # https://github.com/HTDerekLiu/CubicStylization_MATLAB/blob/master for inspiration ~ using the same function structure to minimize chance of bugs
-#Note: FIXME
 
 class RotData:
     def __init__(self):
