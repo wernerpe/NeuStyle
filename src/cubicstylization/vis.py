@@ -29,11 +29,11 @@ def plot_vectors(meshcat_handle, V, Locs, multiplier = 1.0, radius = 0.001, rgba
     for i,(v,l) in enumerate(zip(V, Locs)):
         plot_vector(meshcat_handle, f"n_{i}", v, l, multiplier, radius=radius, rgba=rgba)
 
-def plot_point(meshcat_handle, loc,r):
+def plot_point(meshcat_handle, loc,r, rgba = Rgba(0, 0, 1, 1)):
     n  = "/poi/"+str(np.random.rand())
     meshcat_handle.SetObject(n, 
                              Sphere(r),
-                             Rgba(0, 0, 1, 1),
+                             rgba,
                              )
 
     meshcat_handle.SetTransform(n, 

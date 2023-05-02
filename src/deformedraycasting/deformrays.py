@@ -4,6 +4,7 @@ import igl
 import pickle
 from src.cubicstylization.vis import plot_vectors, plot_point, plot_mesh
 from pydrake.all import StartMeshcat, Rgba
+import trimesh
 
 with open('src/meshes/bunny_cubified.bin', 'rb') as f:
         data = pickle.load(f)
@@ -37,9 +38,15 @@ dir[:, 1] = 0.6 * (np.random.rand(nrays)-0.5)
 dir[:, 2] = 0.3 * np.random.rand(nrays) - 0.4
 dir = dir/np.linalg.norm(dir, axis=1).reshape(-1,1)
 plot_vectors(meshcat, 5*dir, 0.03*loc, radius = 0.002, rgba=Rgba(0,1,0,1))
-
-
 r_o = torch.tensor(loc)
-r_o = torch.tensor(dir)
+r_d = torch.tensor(dir)
 
+mesh = trimesh.Trimesh(vertices=U, faces = F)
+intersector = trimesh.ray.ray_triangle.RayMeshIntersector(mesh)
 
+idx_tri, idx_ray, locs_int = intersector.intersects_id(loc, dir, return_locations = True, bounds = np.zeros((nrays, 6)))
+for l in locs_int:
+     plot_point(meshcat, 0.03*l, r = 0.02, rgba = Rgba(1,1,0.4,1))
+
+while True:
+     pass

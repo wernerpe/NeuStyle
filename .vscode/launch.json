@@ -28,5 +28,13 @@
                 "CUDA_VISIBLE_DEVICES": "0",
             }
         },
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": false
+        },
     ]
 }
