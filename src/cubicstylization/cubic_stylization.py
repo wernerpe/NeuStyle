@@ -1,69 +1,94 @@
-import numpy as np
+import igl
+from utils import fitRotationL1, RotData, ArapConstrainedSolve
 from scipy.sparse import csr_matrix
 import scipy
-from utils import fitRotationL1, rotdata, ArapConstrainedSolve 
-import igl
-from pydrake.all import StartMeshcat
-from vis import plot_mesh, plot_vectors, plot_point
+import numpy as np
 
-V, _, _, F, _, _ = igl.read_obj('src/meshes/bunny.obj')
+def CubiclyStylize(V,
+                   F,
+                   V_pinned_index_list,
+                   V_pinned_locations,
+                   max_alternations = 20,
+                   lambda_ = 0.2,
+                   ADMM_iters = 100,
+                   plotting_handle = None 
+                   ):
+    '''
+    This function applies cubic stylization to a triangle mesh as described in 
+    https://www.dgp.toronto.edu/projects/cubic-stylization/cubicStyle_high.pdf
 
-L = 0.5*(igl.cotmatrix(V,F))
-VA = igl.massmatrix(V,F,igl.MASSMATRIX_TYPE_BARYCENTRIC).diagonal()
-rotdata.F = F.copy()
-rotdata.L = csr_matrix(L.copy())
-rotdata.V = V.copy()
-rotdata.N = igl.per_vertex_normals(V,F)
-rotdata.VA = VA
-rotdata.lambda_ = 0.2
-RHS_ARAP = igl.arap_rhs(V,F,3, energy = igl.ARAP_ENERGY_TYPE_SPOKES_AND_RIMS)
+    input:
+    V                    |V|x3 vertex list
+    F                    |F|x3 face list containing vertex indeces
+    V_pinned_index_list  List with k vertex indeces pinned to a preset location
+    V_pinned_locations   kx3 array containing preset locations of pinned vertices
+    max_alternations     max number of stylization iterations (local-global steps)
+    lambda_              relative weighting of cubeness cost
+    ADMM_iters           max number of ADMM iterations to fit the rotation matrices
+    plotting_handle      function handle of form f(V,F, V_pinned_locations) 
+                         that is called during the iterations to display intermediate
+                         results.
+    output:
+    U                    |V|x3 Deformed vertices satisfying pinned constraints
+    Rall                 3x3x|V| Per vertex rotation matrices of last step
+    '''
+    #check that the number of delivered constraints and locations matches
+    if len(V_pinned_index_list)<1:
+        raise ValueError("Please pin at least one vertex")
+    assert len(V_pinned_index_list) == V_pinned_locations.shape[0]
+    assert ADMM_iters>10
 
-vpin = [10, 2335, 30, 4100]
-tol = 1e-3
-iter = 20
-objHis = []
-UHis = np.zeros((len(V), 3, iter))
+    #load solver params
+    rotdata = RotData()
+    rotdata.lambda_ = lambda_
+    rotdata.maxIter_ADMM = ADMM_iters
 
-#reduce laplacian
-cols = [i for i in range(len(V))]
-for v in vpin:
-    cols.remove(v)
-L_red = scipy.sparse.lil_matrix(L[:,cols])
-L_red = scipy.sparse.lil_matrix(L_red[cols,:])
-U = V.copy()
-cons = V[vpin,:]
-cons[1, 0] -=18 
-U[vpin, :] = cons
-meshcat_handle = StartMeshcat()
+    rotdata.F = F.copy()
+    rotdata.L = csr_matrix(0.5*(igl.cotmatrix(V,F)))
+    rotdata.V = V.copy()
+    rotdata.N = igl.per_vertex_normals(V,F)
+    rotdata.VA = igl.massmatrix(V,F,igl.MASSMATRIX_TYPE_BARYCENTRIC).diagonal()
 
-for v in vpin:
-    plot_point(meshcat_handle, 0.005*U[v,:], r = 0.01)
-plot_mesh(meshcat_handle, 0.005*U, F)
+    vpin = V_pinned_index_list
 
-for it in range(iter):
-    RAll, val, rotdata = fitRotationL1(U, rotdata)
-    # save optimization info
-    objHis.append(val)
-    UHis[:, :, it] = U
-    # global step
-    UPre = U
-    U = ArapConstrainedSolve(L, L_red, RAll, V, cons, vpin)
+    tol = 1e-3
+    
+    objHis = []
+    UHis = np.zeros((len(V), 3, max_alternations))
 
-    # stopping criteria
-    dU = np.sqrt(np.sum((U - UPre) ** 2, axis=1))
-    dUV = np.sqrt(np.sum((U - V) ** 2, axis=1))
-    if np.max(dUV) ==0:
-        print('converged')
-        break
-    reldV = np.max(dU) / np.max(dUV)
-    print('iter: %d, objective: %d, reldV: %d' % (it, val, reldV))
-    plot_mesh(meshcat_handle, 0.005*U, F)
-    if reldV < tol:
-       break
+    #reduce laplacian
+    cols = [i for i in range(len(V))]
+    for v in vpin:
+        cols.remove(v)
+    L_red = scipy.sparse.lil_matrix(rotdata.L[:,cols])
+    L_red = scipy.sparse.lil_matrix(L_red[cols,:])
+    U = V.copy()
+    U[vpin, :] = V_pinned_locations
 
-N = igl.per_vertex_normals(U,F)
-nvecs = 10
-idx = np.random.permutation(np.arange(len(V)))[:nvecs]
-plot_vectors(meshcat_handle, N[idx,:], 0.005*U[idx,:], multiplier = 0.05)
-while True:
-    pass
+    #plot initial mesh
+    if plotting_handle is not None:
+        plotting_handle(U,F,V_pinned_locations)
+    
+    for it in range(max_alternations):
+        #fit rotations using admm
+        RAll, val, rotdata = fitRotationL1(U, rotdata)
+        objHis.append(val)
+        UHis[:, :, it] = U
+
+        # global step
+        UPre = U
+        U = ArapConstrainedSolve(rotdata.L, L_red, RAll, V, V_pinned_locations, vpin)
+        # stopping criteria
+        dU = np.sqrt(np.sum((U - UPre) ** 2, axis=1))
+        dUV = np.sqrt(np.sum((U - V) ** 2, axis=1))
+        if np.max(dUV) ==0:
+            print('converged')
+            break
+        reldV = np.max(dU) / np.max(dUV)
+        print('iter: %d, objective: %d, reldV: %d' % (it, val, reldV))
+        if plotting_handle is not None:
+            plotting_handle(U,F,V_pinned_locations)
+        if reldV < tol:
+            break
+
+    return U, RAll
