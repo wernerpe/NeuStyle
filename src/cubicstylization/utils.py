@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.sparse import csr_matrix, coo_matrix
-
+import scipy
 # https://github.com/HTDerekLiu/CubicStylization_MATLAB/blob/master for inspiration ~ using the same function structure to minimize chance of bugs
 #Note: FIXME
 
@@ -40,6 +40,31 @@ def vertexFaceAdjacency(F):
     for ii in range(VT.shape[1]):
         adjF[ii] = indices[VT[:, ii].toarray().ravel().astype(bool)].tolist()
     return adjF
+
+def ArapConstrainedSolve(L, L_red, Rall, P, ConstraintLocation, FixedIndex):
+    #RT_stack = np.concatenate(tuple([Rall[:,:,idx].T for idx in range(Rall.shape[2])]))
+    Pprime = P.copy()
+    Pprime[FixedIndex, :] = ConstraintLocation
+    Pcons = 0*P.copy()
+    Pcons[FixedIndex, :] = ConstraintLocation
+    #LP05 = 0.5*L@P
+    rhs = np.zeros(P.shape)
+    for i in range(len(P)):
+        nzentries = L[i,:].tolil().rows[0]
+        nzentries.remove(i)
+        for j in nzentries:
+            rhs[i,:] -= 0.5*L[i,j]*((P[i,:].reshape(1,3)- P[j,:].reshape(1,3))@(Rall[:,:,i].T + Rall[:,:,j].T)).squeeze()
+
+    eqcons = L@Pcons
+    rhs = rhs - eqcons
+    rows = [i for i in range(len(P))]
+    for v in FixedIndex:
+        rows.remove(v)
+    Pprime_desc = scipy.sparse.linalg.spsolve(L_red, rhs[rows,:])
+    #assert np.max(np.abs(ppr_col[FixedIndex]))<1e-4
+    Pprime[rows,:] = Pprime_desc
+    return Pprime
+
 
 def shrinkage(x, k):
     """
@@ -161,10 +186,13 @@ def fitRotationL1(U, rotData: RotData):
                 rotData.zAll[:, ii] = z.squeeze()
                 rotData.uAll[:, ii] = u.squeeze()
                 rotData.rhoAll[ii] = rho
-                RAll[:, :, ii] = R
+                #wierd bug i cannot find
+                Rperm = -R
+                Rperm[:,-1] *=-1
+                RAll[:, :, ii] = R# Rperm
 
                 # save ADMM info
-                objVal = objVal + 0.5 * np.trace((R @ dV - dU) @ W @ (R @ dV - dU).T) + rotData.lambda_ * rotData.VA[ii] * np.linalg.norm(R @ n, ord=1)
+                objVal = objVal - 0.5 * np.trace((R @ dV - dU) @ W @ (R @ dV - dU).T) + rotData.lambda_ * rotData.VA[ii] * np.linalg.norm(R @ n, ord=1)
                 break
 
     return RAll, objVal, rotData
