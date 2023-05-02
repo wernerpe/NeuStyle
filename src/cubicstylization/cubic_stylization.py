@@ -1,14 +1,8 @@
-import pygame
-import OpenGL
-from pygame.locals import *
-from OpenGL.GL import *
-from OpenGL.GLU import *
 import numpy as np
 from scipy.sparse import csr_matrix
 import scipy
 from utils import fitRotationL1, rotdata, ArapConstrainedSolve 
 import igl
-
 from pydrake.all import StartMeshcat
 from vis import plot_mesh, plot_vectors, plot_point
 
