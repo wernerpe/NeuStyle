@@ -39,3 +39,12 @@ class DataModule(LightningDataModule):
             self.cfg.validation.batch_size,
             num_workers=self.cfg.validation.num_workers,
         )
+
+    def predict_dataloader(self):
+        return DataLoader(
+            ValidationWrapper(
+                DATASETS[self.dataset_name](self.cfg.dataset[self.dataset_name], "val"),
+                1,
+            ),
+            num_workers=self.cfg.validation.num_workers,
+        )

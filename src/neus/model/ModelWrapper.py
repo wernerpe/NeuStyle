@@ -113,6 +113,9 @@ class ModelWrapper(LightningModule):
         mesh = self.model.generate_mesh()
         mesh.export("latest_mesh.stl")
 
+    def predict_step(self, batch, batch_idx):
+        pass
+
     def render_image(
         self,
         extrinsics: Float[Tensor, "batch 4 4"],
