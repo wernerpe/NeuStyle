@@ -3,6 +3,7 @@ from utils import fitRotationL1, RotData, ArapConstrainedSolve
 from scipy.sparse import csr_matrix
 import scipy
 import numpy as np
+import trimesh
 
 def CubiclyStylize(V,
                    F,
@@ -11,7 +12,8 @@ def CubiclyStylize(V,
                    max_alternations = 20,
                    lambda_ = 0.2,
                    ADMM_iters = 100,
-                   plotting_handle = None 
+                   plotting_handle = None,
+                   smoothing = True 
                    ):
     '''
     This function applies cubic stylization to a triangle mesh as described in 
@@ -78,6 +80,9 @@ def CubiclyStylize(V,
         # global step
         UPre = U
         U = ArapConstrainedSolve(rotdata.L, L_red, RAll, V, V_pinned_locations, vpin)
+        if smoothing:
+            mesh_smooth = trimesh.smoothing.filter_humphrey(trimesh.Trimesh(vertices = U, faces = F), beta = 0.2, alpha=0.1 )
+        U = mesh_smooth.vertices
         # stopping criteria
         dU = np.sqrt(np.sum((U - UPre) ** 2, axis=1))
         dUV = np.sqrt(np.sum((U - V) ** 2, axis=1))

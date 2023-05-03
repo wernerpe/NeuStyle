@@ -39,13 +39,13 @@ U, RAll = CubiclyStylize(V,
                          V_pinned_index_list=vpin,
                          V_pinned_locations=cons,
                          max_alternations=20,
-                         lambda_= 0.25,
+                         lambda_= 0.45,
                          ADMM_iters = 100,
                          plotting_handle=plotting_handle
                          )
 
 
-with open('src/meshes/mic_stylized.bin', 'wb') as f:
+with open('src/meshes/mic_stylized_0.45.bin', 'wb') as f:
         data = [V+Vm, U+Vm, F, RAll]
         pickle.dump(data, f)
 
