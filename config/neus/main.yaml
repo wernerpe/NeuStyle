@@ -26,8 +26,8 @@ training:
     save_top_k: -1
 
 rendering:
-  checkpoint: samples/mic_checkpoint.ckpt
-  deformation: samples/mic_deformation.pickle
+  checkpoint: samples/chair_checkpoint.ckpt
+  deformation: samples/chair_deformation.pickle
 
 # Mode can be either "train" or "render"
 mode: train

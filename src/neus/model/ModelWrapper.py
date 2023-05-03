@@ -275,6 +275,9 @@ class ModelWrapper(LightningModule):
 
         output = {key: fix(value) for key, value in output.items()}
 
+        # Render on white background.
+        output["color"] = output["color"] + (1 - output["alpha"][:, None])
+
         return grid_coordinates, output
 
     def render_image(
@@ -324,12 +327,17 @@ class ModelWrapper(LightningModule):
             for batch in output
         ]
 
-        return grid_coordinates, collate(
+        output = collate(
             output,
             lambda x: rearrange(
                 torch.cat(x, dim=1), "b (h w) ... -> b ... h w", h=h, w=w
             ),
         )
+
+        # Render on white background.
+        output["color"] = output["color"] + (1 - output["alpha"][:, None])
+
+        return grid_coordinates, output
 
     def configure_optimizers(self):
         optimizer = optim.Adam(self.parameters(), lr=self.cfg.training.optim.lr)

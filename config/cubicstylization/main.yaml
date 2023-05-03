@@ -1,4 +1,4 @@
-input: samples/mic_original.stl
+input: samples/chair_original.stl
 lambda_: 0.45
-output: samples/mic_stylized.stl
-output_package: samples/mic_deformation.pickle
+output: samples/chair_stylized.stl
+output_package: samples/chair_deformation.pickle
