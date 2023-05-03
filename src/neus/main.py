@@ -80,7 +80,6 @@ def train(cfg: DictConfig):
         trainer.fit(
             model,
             datamodule=data_module,
-            ckpt_path=cfg.rendering.checkpoint,
         )
     elif cfg.mode == "render":
         trainer.predict(
