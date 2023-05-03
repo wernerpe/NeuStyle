@@ -1,2 +1,3 @@
-input: latest_mesh.stl
-output: latest_stylized.stl
+input: samples/mic_original.stl
+output: samples/mic_stylized.stl
+output_package: samples/mic_deformation.pickle

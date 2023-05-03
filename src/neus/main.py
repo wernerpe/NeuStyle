@@ -71,12 +71,17 @@ def train(cfg: DictConfig):
         strategy="ddp" if torch.cuda.device_count() > 1 else "auto",
         callbacks=callbacks,
         val_check_interval=cfg.validation.interval,
+        inference_mode=False,  # needed for the forward pass gradient in NeuS to work
     )
     model = ModelWrapper(cfg)
     data_module = DataModule(cfg)
 
     if cfg.mode == "train":
-        trainer.fit(model, datamodule=data_module)
+        trainer.fit(
+            model,
+            datamodule=data_module,
+            ckpt_path=cfg.rendering.checkpoint,
+        )
     elif cfg.mode == "render":
         trainer.predict(
             model,

@@ -4,23 +4,24 @@ import numpy as np
 import torch
 import trimesh
 from jaxtyping import Float, Int
-from pydrake.all import Rgba, StartMeshcat
+
+try:
+    from pydrake.all import Rgba, StartMeshcat
+
+    from src.cubicstylization.vis import plot_mesh, plot_point, plot_vectors
+except ModuleNotFoundError:
+    pass
 from torch import Tensor
-
-from src.cubicstylization.vis import plot_mesh, plot_point, plot_vectors
-
-with open("src/meshes/bunny_cubified.bin", "rb") as f:
-    data = pickle.load(f)
-    V, U, F, RAll = tuple(data)
 
 
 # convert straight rays in deformed space to piecewise sampling locations for
 def map_rays_to_neus(
     ray_origins: Float[Tensor, "ray 3"],
     ray_directions: Float[Tensor, "ray 3"],
-    V: Float[Tensor, "vertex 3"],
-    U: Float[Tensor, "vertex 3"],
-    F: Int[Tensor, "face 3"],
+    V: Float[np.ndarray, "vertex 3"],
+    U: Float[np.ndarray, "vertex 3"],
+    F: Int[np.ndarray, "face 3"],
+    RAll: Float[np.ndarray, "3 3 vertex"],
     n_samples: int = 21,
     scale: float = 2.0,
 ):
@@ -42,13 +43,13 @@ def map_rays_to_neus(
     sampling_points_mat_undef |R|x|S|x3 matrix indexed by ray returnin an |s|x3 matrix
                                  of samples near the surface of undeformed mesh
     """
-    assert n_samples % 2 == 1
+    # assert n_samples % 2 == 1
     if torch.zeros((3, 3)).device == torch.device("cpu"):
-        r_o = ray_origins.numpy()
-        r_d = ray_directions.numpy()
+        r_o = ray_origins.detach().cpu().numpy()
+        r_d = ray_directions.detach().cpu().numpy()
     else:
-        r_o = ray_origins.cpu().numpy()
-        r_d = ray_directions.cpu().numpy()
+        r_o = ray_origins.detach().cpu().numpy()
+        r_d = ray_directions.detach().cpu().numpy()
     mesh = trimesh.Trimesh(vertices=U, faces=F)
     intersector = trimesh.ray.ray_triangle.RayMeshIntersector(mesh)
     idx_tri, idx_ray, locs_int = intersector.intersects_id(
@@ -64,7 +65,7 @@ def map_rays_to_neus(
     for tri_idx, ray_idx, intersection in zip(idx_tri, idx_ray, locs_int):
         closest_vert = np.argmin(np.linalg.norm(U - intersection.reshape(1, 3), axis=1))
         surface_offsets_along_normal = offset_mult * np.tile(
-            dir[ray_idx, :], (n_samples, 1)
+            r_d[ray_idx, :], (n_samples, 1)
         )
         surface_offsets_along_normal_rot_to_orig = (
             RAll[:, :, closest_vert].T @ surface_offsets_along_normal.T
@@ -83,6 +84,10 @@ def map_rays_to_neus(
 
 
 if __name__ == "__main__":
+    with open("src/meshes/bunny_cubified.bin", "rb") as f:
+        data = pickle.load(f)
+        V, U, F, RAll = tuple(data)
+
     meshscaling = 0.03
     meshcat = StartMeshcat()
     plot_mesh(meshcat, meshscaling * V, F, rgba=Rgba(0, 0, 1, 0.2))
@@ -92,19 +97,24 @@ if __name__ == "__main__":
     loc = np.zeros((nrays, 3))
     loc[:, 0] = 65
     loc[:, 2] = 30
-    dir = np.zeros((nrays, 3))
-    dir[:, 0] = -1
-    dir[:, 1] = 0.6 * (np.random.rand(nrays) - 0.5)
-    dir[:, 2] = 0.3 * np.random.rand(nrays) - 0.4
-    dir = dir / np.linalg.norm(dir, axis=1).reshape(-1, 1)
+    dirs = np.zeros((nrays, 3))
+    dirs[:, 0] = -1
+    dirs[:, 1] = 0.6 * (np.random.rand(nrays) - 0.5)
+    dirs[:, 2] = 0.3 * np.random.rand(nrays) - 0.4
+    dirs = dirs / np.linalg.norm(dirs, axis=1).reshape(-1, 1)
     plot_vectors(
-        meshcat, 5 * dir, meshscaling * loc, radius=0.002, rgba=Rgba(0, 1, 0, 1)
+        meshcat, 5 * dirs, meshscaling * loc, radius=0.002, rgba=Rgba(0, 1, 0, 1)
     )
     r_o = torch.tensor(loc)
-    r_d = torch.tensor(dir)
+    r_d = torch.tensor(dirs)
 
     ray_samples_def, ray_samples_undef = map_rays_to_neus(
-        torch.tensor(loc), torch.tensor(dir), V, U, F
+        torch.tensor(loc),
+        torch.tensor(dirs),
+        V,
+        U,
+        F,
+        RAll,
     )
 
     for r in ray_samples_undef:

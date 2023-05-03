@@ -1,3 +1,5 @@
+import pickle
+
 import hydra
 import numpy as np
 import trimesh
@@ -37,6 +39,8 @@ def stylize(cfg: DictConfig):
 
     deformed = Trimesh(U + Vm, F)
     deformed.export(cfg.output)
+    with open(cfg.output_package, "wb") as f:
+        pickle.dump((U + Vm, V + Vm, F, RAll), f)
 
 
 if __name__ == "__main__":
