@@ -3,7 +3,9 @@ import pickle
 import numpy as np
 import torch
 import trimesh
+from jaxtyping import Float, Int
 from pydrake.all import Rgba, StartMeshcat
+from torch import Tensor
 
 from src.cubicstylization.vis import plot_mesh, plot_point, plot_vectors
 
@@ -13,7 +15,15 @@ with open("src/meshes/bunny_cubified.bin", "rb") as f:
 
 
 # convert straight rays in deformed space to piecewise sampling locations for
-def map_rays_to_neus(ray_origins, ray_directions, V, U, F, n_samples=21, scale=2.0):
+def map_rays_to_neus(
+    ray_origins: Float[Tensor, "ray 3"],
+    ray_directions: Float[Tensor, "ray 3"],
+    V: Float[Tensor, "vertex 3"],
+    U: Float[Tensor, "vertex 3"],
+    F: Int[Tensor, "face 3"],
+    n_samples: int = 21,
+    scale: float = 2.0,
+):
     """
     take in rays in deformed space and map them to the original neus, by splitting them
     into linesegments around the surface, where sdf = 0
