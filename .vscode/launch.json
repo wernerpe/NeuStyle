@@ -17,6 +17,20 @@
             }
         },
         {
+            "name": "Render NeuS",
+            "type": "python",
+            "request": "launch",
+            "module": "src.neus.main",
+            "console": "integratedTerminal",
+        "justMyCode": true,
+            "args": [
+                "mode=render"
+            ],
+            "env": {
+                "CUDA_VISIBLE_DEVICES": "0",
+            }
+        },
+        {
             "name": "Visualize Epipolar Lines",
             "type": "python",
             "request": "launch",
@@ -27,14 +41,6 @@
             "env": {
                 "CUDA_VISIBLE_DEVICES": "0",
             }
-        },
-        {
-            "name": "Python: Current File",
-            "type": "python",
-            "request": "launch",
-            "program": "${file}",
-            "console": "integratedTerminal",
-            "justMyCode": false
         },
     ]
 }

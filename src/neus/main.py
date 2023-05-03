@@ -72,10 +72,19 @@ def train(cfg: DictConfig):
         callbacks=callbacks,
         val_check_interval=cfg.validation.interval,
     )
-    trainer.fit(
-        ModelWrapper(cfg),
-        datamodule=DataModule(cfg),
-    )
+    model = ModelWrapper(cfg)
+    data_module = DataModule(cfg)
+
+    if cfg.mode == "train":
+        trainer.fit(model, datamodule=data_module)
+    elif cfg.mode == "render":
+        trainer.predict(
+            model,
+            datamodule=data_module,
+            ckpt_path=cfg.rendering.checkpoint,
+        )
+    else:
+        raise ValueError(f'Unrecognized mode "{cfg.mode}"')
 
 
 if __name__ == "__main__":
