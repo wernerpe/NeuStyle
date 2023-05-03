@@ -34,6 +34,8 @@ def map_rays_to_neus(
     V: |V|x3 vertices of original mesh
     U: |V|x3 vertices of stylized mesh
     F: |F|x3 faces of mesh
+    n_samples: number of samples in the subray
+    scale: half-length of subray
 
     output:
     sampling_points_mat |R|x|S|x3 matrix indexed by ray returnin an |s|x3 matrix of samples near the surface
