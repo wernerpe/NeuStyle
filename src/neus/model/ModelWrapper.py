@@ -127,7 +127,7 @@ class ModelWrapper(LightningModule):
         with open(self.cfg.rendering.deformation, "rb") as f:
             v_deformed, v_undeformed, faces, rotations = pickle.load(f)
 
-        coordinates, predicted = self.render_deformed_image(
+        coordinates, deformed = self.render_deformed_image(
             batch["extrinsics"],
             batch["intrinsics"],
             (h, w),
@@ -135,6 +135,13 @@ class ModelWrapper(LightningModule):
             v_deformed,
             faces,
             rotations,
+        )
+        coordinates, undeformed = self.render_image(
+            batch["extrinsics"],
+            batch["intrinsics"],
+            batch["near"],
+            batch["far"],
+            (h, w),
         )
 
         # Sample ground-truth pixel locations.
@@ -146,20 +153,27 @@ class ModelWrapper(LightningModule):
         ).cpu()
 
         # First row of visualization: RGB comparison.
-        row_rgb = pack([predicted["color"], ground_truth[:, :3]], "b c h *")[0]
+        row_rgb = pack(
+            [deformed["color"], undeformed["color"], ground_truth[:, :3]], "b c h *"
+        )[0]
 
         # Second row of visualization: mask comaprison.
-        row_mask = pack([predicted["alpha"], ground_truth[:, 3]], "b h *")[0]
+        row_mask = pack(
+            [deformed["alpha"], undeformed["alpha"], ground_truth[:, 3]], "b h *"
+        )[0]
         row_mask = repeat(row_mask, "b h w -> b c h w", c=3)
 
-        # Third row of visualization: depth and normals.
-        depth = predicted["depth"]
-        depth = (depth - depth.min()) / (depth.max() - depth.min() + 1e-10)
-        depth = apply_color_map_to_image(depth)
-        normals = predicted["normal"] * 0.5 + 0.5
-        row_extra = pack([depth, normals], "b c h *")[0]
+        # Third row of visualization: normals.
+        row_normals = pack(
+            [
+                deformed["normal"] * 0.5 + 0.5,
+                undeformed["normal"] * 0.5 + 0.5,
+                torch.zeros_like(undeformed["normal"]),
+            ],
+            "b c h *",
+        )[0]
 
-        visualization = pack([row_rgb, row_mask, row_extra], "b c * w")[0]
+        visualization = pack([row_rgb, row_mask, row_normals], "b c * w")[0]
         visualization = visualization.clip(min=0, max=1)
 
         self.logger.log_image(
@@ -198,7 +212,7 @@ class ModelWrapper(LightningModule):
             faces,
             rotations,
             2,
-            0.25,
+            0.1,  # large enough segment to capture surface
         )
         print("Done deforming rays.")
 
