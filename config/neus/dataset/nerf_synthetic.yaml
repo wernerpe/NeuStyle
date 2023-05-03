@@ -1,5 +1,5 @@
 nerf_synthetic:
   path: data/nerf_synthetic
-  scene: chair
+  scene: mic
   repetitions_per_epoch: 1000
   scale_factor: 0.3

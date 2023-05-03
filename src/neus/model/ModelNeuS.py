@@ -46,7 +46,7 @@ class ModelNeuS(nn.Module):
 
     def generate_mesh(
         self,
-        resolution: int = 128,
+        resolution: int = 192,
         batch_size: int = 16384,
     ) -> Trimesh:
         # Generate a 3D grid of coordinates.
