@@ -1,4 +1,5 @@
 import mcubes
+import numpy as np
 import torch
 from einops import rearrange
 from jaxtyping import Float
@@ -71,4 +72,7 @@ class ModelNeuS(nn.Module):
 
         # Get a mesh. Note the sign flip.
         vertices, faces = mcubes.marching_cubes(-sdf.detach().cpu().numpy(), 0)
-        return Trimesh((vertices / resolution) * 2 - 1, faces)
+        vertices = (vertices / resolution) * 2 - 1
+        x, y, z = vertices.T
+        vertices = np.stack([y, x, z], axis=-1)
+        return Trimesh(vertices, faces)
