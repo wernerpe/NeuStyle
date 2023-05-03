@@ -1,5 +1,5 @@
 import igl
-from utils import fitRotationL1, RotData, ArapConstrainedSolve
+from src.cubicstylization.utils import fitRotationL1, RotData, ArapConstrainedSolve
 from scipy.sparse import csr_matrix
 import scipy
 import numpy as np

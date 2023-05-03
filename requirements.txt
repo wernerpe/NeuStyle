@@ -10,4 +10,6 @@ beartype
 wandb
 einops
 Pillow
-pydrake
+rtree
+libigl
+drake

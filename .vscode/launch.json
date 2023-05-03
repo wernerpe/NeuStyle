@@ -22,7 +22,7 @@
             "request": "launch",
             "module": "src.neus.main",
             "console": "integratedTerminal",
-        "justMyCode": true,
+            "justMyCode": true,
             "args": [
                 "mode=render"
             ],
@@ -35,6 +35,18 @@
             "type": "python",
             "request": "launch",
             "module": "src.neus.scripts.visualize_epipolar_lines",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [],
+            "env": {
+                "CUDA_VISIBLE_DEVICES": "0",
+            }
+        },
+        {
+            "name": "Run Cubic Stylization",
+            "type": "python",
+            "request": "launch",
+            "module": "src.cubicstylization.main",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [],

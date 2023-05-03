@@ -27,8 +27,7 @@ training:
 
 rendering:
   checkpoint: samples/mic_checkpoint.ckpt
-  undeformed: samples/mic_original.stl
-  deformed: samples/mic_stylized.bin
+  deformation: samples/mic_deformation.pickle
 
 # Mode can be either "train" or "render"
 mode: train

@@ -1,4 +1,5 @@
 import mcubes
+import numpy as np
 import torch
 from einops import rearrange
 from jaxtyping import Float
@@ -50,8 +51,9 @@ class ModelNeuS(nn.Module):
         batch_size: int = 16384,
     ) -> Trimesh:
         # Generate a 3D grid of coordinates.
+        plus1 = resolution + 1
         device = next(iter(self.sdf_network.parameters())).device
-        xyz = torch.linspace(-1, 1, resolution, dtype=torch.float32, device=device)
+        xyz = torch.linspace(-1, 1, plus1, dtype=torch.float32, device=device)
         xyz = torch.stack(torch.meshgrid(xyz, xyz, xyz, indexing="xy"), dim=-1)
         xyz = rearrange(xyz, "d0 d1 d2 xyz -> (d0 d1 d2) xyz")
 
@@ -63,11 +65,14 @@ class ModelNeuS(nn.Module):
         sdf = rearrange(
             torch.cat(sdf, dim=0),
             "(d0 d1 d2) -> d0 d1 d2",
-            d0=resolution,
-            d1=resolution,
-            d2=resolution,
+            d0=plus1,
+            d1=plus1,
+            d2=plus1,
         )
 
         # Get a mesh. Note the sign flip.
         vertices, faces = mcubes.marching_cubes(-sdf.detach().cpu().numpy(), 0)
+        vertices = (vertices / resolution) * 2 - 1
+        x, y, z = vertices.T
+        vertices = np.stack([y, x, z], axis=-1)
         return Trimesh(vertices, faces)
