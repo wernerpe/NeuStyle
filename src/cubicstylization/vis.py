@@ -2,9 +2,13 @@ import numpy as np
 import meshcat
 from pydrake.all import TriangleSurfaceMesh, Rgba, SurfaceTriangle, Sphere
 
-def plot_mesh(meshcat_handle, V, F, rgba=Rgba(1, 0, 0, 1)):
+def plot_mesh(meshcat_handle, V, F, rgba=Rgba(1, 0, 0, 1), name = ''):
     tri_drake = [SurfaceTriangle(*t) for t in F]
-    meshcat_handle.SetObject("/mesh_name/"+ str(np.random.rand()),
+    if len(name) == 0:
+        name = "/mesh_name/"+ str(np.random.rand())
+    else:
+        name = "/mesh_name/"+ name
+    meshcat_handle.SetObject(name ,
                             TriangleSurfaceMesh(tri_drake, V),
                             rgba, wireframe=False)
     
