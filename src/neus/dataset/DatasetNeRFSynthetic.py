@@ -43,7 +43,20 @@ class DatasetNeRFSynthetic(Dataset):
                 torch.tensor(frame["transform_matrix"], dtype=torch.float32)
                 @ conversion
             )
-            images.append(transforms(Image.open(path / f"{frame['file_path']}.png")))
+
+            # Read the image.
+            image = Image.open(path / f"{frame['file_path']}.png")
+
+            # Composite the image onto a black background.
+            background = Image.new("RGB", image.size, (0, 0, 0)).convert("RGBA")
+            rgb = Image.alpha_composite(background, image)
+            rgb = transforms(rgb.convert("RGB"))
+
+            # Separately add the alpha channel.
+            alpha = transforms(image)[3:4]
+            image = torch.cat([rgb, alpha], dim=0)
+
+            images.append(image)
         self.images = torch.stack(images)
         self.extrinsics = torch.stack(extrinsics)
         self.extrinsics[:, :3, 3] *= cfg_dataset.scale_factor
