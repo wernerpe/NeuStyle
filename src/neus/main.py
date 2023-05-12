@@ -64,7 +64,7 @@ def train(cfg: DictConfig):
         )
 
     trainer = Trainer(
-        max_epochs=-1,
+        max_epochs=1,
         accelerator="gpu",
         logger=logger,
         devices="auto",
