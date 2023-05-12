@@ -1,9 +1,12 @@
 import pickle
+from io import StringIO
 from typing import Dict, Optional, Tuple
 
 import numpy as np
 import torch
 import torch.nn.functional as F
+import trimesh
+import wandb
 from einops import pack, rearrange, repeat
 from jaxtyping import Float, Int
 from lightning_fabric.utilities.apply_func import apply_to_collection
@@ -114,7 +117,20 @@ class ModelWrapper(LightningModule):
 
         # Dump a mesh.
         mesh = self.model.generate_mesh()
-        mesh.export("latest_mesh.stl")
+        io = StringIO()
+        io.write(
+            trimesh.exchange.obj.export_obj(
+                mesh,
+                include_normals=False,
+                include_color=False,
+                include_texture=False,
+                return_texture=False,
+                write_texture=False,
+            )
+        )
+        io.flush()
+        io.seek(0)
+        wandb.log({"mesh": [wandb.Object3D(io, file_type="obj")]})
 
     def predict_step(self, batch, batch_idx):
         # Render a deformed image.
