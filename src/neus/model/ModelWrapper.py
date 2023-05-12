@@ -104,7 +104,7 @@ class ModelWrapper(LightningModule):
         depth = predicted["depth"]
         depth = (depth - depth.min()) / (depth.max() - depth.min() + 1e-10)
         depth = apply_color_map_to_image(depth)
-        normals = predicted["normal"] * 0.5 + 0.5
+        normals = predicted["normal"].abs()
         row_extra = pack([depth, normals], "b c h *")[0]
 
         visualization = pack([row_rgb, row_mask, row_extra], "b c * w")[0]
@@ -351,7 +351,7 @@ class ModelWrapper(LightningModule):
         )
 
         # Render on white background.
-        output["color"] = output["color"] + (1 - output["alpha"][:, None])
+        # output["color"] = output["color"] + (1 - output["alpha"][:, None])
 
         return grid_coordinates, output
 
