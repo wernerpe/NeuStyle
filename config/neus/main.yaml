@@ -5,7 +5,7 @@ defaults:
 wandb:
   project: styleneus
   name: styleneus
-  entity: charatan
+  entity: scene-representation-group
   mode: offline
 
 validation:
@@ -29,5 +29,10 @@ rendering:
   checkpoint: samples/chair_checkpoint.ckpt
   deformation: samples/chair_deformation.pickle
 
-# Mode can be either "train" or "render"
+meshing:
+  resolution: 384
+  checkpoint: model.ckpt
+  path: mesh.obj
+
+# Mode can be either "train", "mesh", or "render"
 mode: train

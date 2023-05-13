@@ -87,6 +87,14 @@ def train(cfg: DictConfig):
             datamodule=data_module,
             ckpt_path=cfg.rendering.checkpoint,
         )
+    elif cfg.mode == "mesh":
+        model.load_state_dict(torch.load(cfg.meshing.checkpoint)["state_dict"])
+        model = model.to(torch.device("cuda:0"))
+        mesh = model.model.generate_mesh(cfg.meshing.resolution)
+        mesh_dir = Path(cfg.meshing.path)
+        mesh_dir.parent.mkdir(exist_ok=True, parents=True)
+        mesh.export(mesh_dir)
+
     else:
         raise ValueError(f'Unrecognized mode "{cfg.mode}"')
 

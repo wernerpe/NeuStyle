@@ -59,7 +59,7 @@ class ModelNeuS(nn.Module):
 
         # Evaluate the SDF on the grid.
         sdf = [
-            self.sdf_network.sdf(xyz_batch)["sdf"]
+            self.sdf_network.sdf(xyz_batch)["sdf"].detach().cpu()
             for xyz_batch in xyz.split(batch_size)
         ]
         sdf = rearrange(
@@ -71,7 +71,7 @@ class ModelNeuS(nn.Module):
         )
 
         # Get a mesh. Note the sign flip.
-        vertices, faces = mcubes.marching_cubes(sdf.detach().cpu().numpy(), 0)
+        vertices, faces = mcubes.marching_cubes(sdf.numpy(), 0)
         vertices = (vertices / resolution) * 2 - 1
         x, y, z = vertices.T
         vertices = np.stack([y, x, z], axis=-1)
