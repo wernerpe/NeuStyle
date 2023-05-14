@@ -45,7 +45,7 @@ class DataModule(LightningDataModule):
         return DataLoader(
             SpinWrapper(
                 DATASETS[self.dataset_name](self.cfg.dataset[self.dataset_name], "val"),
-                30,
+                60,
             ),
             num_workers=self.cfg.validation.num_workers,
         )
