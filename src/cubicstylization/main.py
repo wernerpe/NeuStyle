@@ -1,4 +1,5 @@
 import pickle
+from pathlib import Path
 
 import hydra
 import numpy as np
@@ -38,6 +39,7 @@ def stylize(cfg: DictConfig):
     )
 
     deformed = Trimesh(U + Vm, F)
+    Path(cfg.output).parent.mkdir(exist_ok=True, parents=True)
     deformed.export(cfg.output)
     with open(cfg.output_package, "wb") as f:
         pickle.dump((U + Vm, V + Vm, F, RAll), f)
