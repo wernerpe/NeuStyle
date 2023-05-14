@@ -160,36 +160,16 @@ class ModelWrapper(LightningModule):
             (h, w),
         )
 
-        # Sample ground-truth pixel locations.
-        ground_truth = F.grid_sample(
-            batch["image"],
-            coordinates * 2 - 1,
-            mode="bilinear",
-            align_corners=False,
-        ).cpu()
-
         # First row of visualization: RGB comparison.
-        row_rgb = pack(
-            [deformed["color"], undeformed["color"], ground_truth[:, :3]], "b c h *"
-        )[0]
+        row_rgb = pack([deformed["color"], undeformed["color"]], "b c h *")[0]
 
-        # Second row of visualization: mask comaprison.
-        row_mask = pack(
-            [deformed["alpha"], undeformed["alpha"], ground_truth[:, 3]], "b h *"
-        )[0]
-        row_mask = repeat(row_mask, "b h w -> b c h w", c=3)
-
-        # Third row of visualization: normals.
+        # Second row of visualization: normals.
         row_normals = pack(
-            [
-                deformed["normal"] * 0.5 + 0.5,
-                undeformed["normal"] * 0.5 + 0.5,
-                torch.zeros_like(undeformed["normal"]),
-            ],
+            [deformed["normal"].abs(), undeformed["normal"].abs()],
             "b c h *",
         )[0]
 
-        visualization = pack([row_rgb, row_mask, row_normals], "b c * w")[0]
+        visualization = pack([row_rgb, row_normals], "b c * w")[0]
         visualization = visualization.clip(min=0, max=1)
 
         self.logger.log_image(
@@ -292,7 +272,7 @@ class ModelWrapper(LightningModule):
         output = {key: fix(value) for key, value in output.items()}
 
         # Render on white background.
-        output["color"] = output["color"] + (1 - output["alpha"][:, None])
+        # output["color"] = output["color"] + (1 - output["alpha"][:, None])
 
         return grid_coordinates, output
 

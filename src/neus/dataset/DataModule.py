@@ -3,6 +3,7 @@ from pytorch_lightning import LightningDataModule
 from torch.utils.data import DataLoader
 
 from .DatasetNeRFSynthetic import DatasetNeRFSynthetic
+from .SpinWrapper import SpinWrapper
 from .ValidationWrapper import ValidationWrapper
 
 DATASETS = {
@@ -42,6 +43,9 @@ class DataModule(LightningDataModule):
 
     def predict_dataloader(self):
         return DataLoader(
-            DATASETS[self.dataset_name](self.cfg.dataset[self.dataset_name], "val"),
+            SpinWrapper(
+                DATASETS[self.dataset_name](self.cfg.dataset[self.dataset_name], "val"),
+                30,
+            ),
             num_workers=self.cfg.validation.num_workers,
         )
