@@ -1,5 +1,6 @@
 import pickle
 from io import StringIO
+from pathlib import Path
 from typing import Dict, Optional, Tuple
 
 import numpy as np
@@ -18,6 +19,7 @@ from torch import Tensor, nn, optim
 from ..misc.collation import collate
 from ..misc.deformrays import map_rays_to_neus
 from ..misc.geometry import get_world_rays
+from ..misc.image_io import save_image
 from ..misc.sampling import sample_image_grid, sample_training_rays
 from ..visualization.color_map import apply_color_map_to_image
 from .ModelNeuS import ModelNeuS
@@ -38,6 +40,7 @@ class ModelWrapper(LightningModule):
     ):
         super().__init__()
         self.cfg = cfg
+        self.image_index = 0
 
         # Set up the model.
         (model_name,) = cfg.model.keys()
@@ -171,6 +174,15 @@ class ModelWrapper(LightningModule):
 
         visualization = pack([row_rgb, row_normals], "b c * w")[0]
         visualization = visualization.clip(min=0, max=1)
+
+        save_image(
+            rearrange(visualization, "b c h w -> b c h w"),
+            Path("results/rendered")
+            / f"{Path(self.cfg.rendering.checkpoint).stem}"
+            / f"deformation_{Path(self.cfg.rendering.deformation).parent.name}"
+            / f"image_{self.image_index:0>2}.png",
+        )
+        self.image_index += 1
 
         self.logger.log_image(
             "comparison",
