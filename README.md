@@ -2,6 +2,4 @@
 
 ![cubic stylization rendering of teddy bear](samples/animation.gif)
 
-```https://github.com/libigl/libigl-python-bindings.git```
-python -m pip install libigl
-python pip install drake # used for meshcat
+The above sample uses a [teddy bear mesh by hectopod](https://sketchfab.com/3d-models/teddy-bears-e84b12b4ac20402aaf4d40f2219cd0e2), which is licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
