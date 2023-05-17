@@ -15,6 +15,7 @@ from omegaconf import DictConfig
 from pytorch_lightning import LightningModule
 from pytorch_lightning.loggers.wandb import WandbLogger
 from torch import Tensor, nn, optim
+from tqdm import tqdm
 
 from ..misc.collation import collate
 from ..misc.deformrays import map_rays_to_neus
@@ -141,6 +142,10 @@ class ModelWrapper(LightningModule):
         _, _, h, w = batch["image"].shape
         h = int(h * scale)
         w = int(w * scale)
+        import random
+
+        if random.random() < 0.9:
+            return
 
         # Load the original and deformed meshes.
         with open(self.cfg.rendering.deformation, "rb") as f:
@@ -175,12 +180,25 @@ class ModelWrapper(LightningModule):
         visualization = pack([row_rgb, row_normals], "b c * w")[0]
         visualization = visualization.clip(min=0, max=1)
 
+        def vis_normals(vis):
+            a = vis.abs().norm(dim=1, keepdim=True).clip(min=0, max=1)
+            return vis.abs() * a + (1 - a)
+
         save_image(
-            rearrange(visualization, "b c h w -> b c h w"),
-            Path("results/rendered")
-            / f"{Path(self.cfg.rendering.checkpoint).stem}"
-            / f"deformation_{Path(self.cfg.rendering.deformation).parent.name}"
-            / f"image_{self.image_index:0>2}.png",
+            deformed["color"],
+            Path("for_paper") / f"image_{self.image_index:0>2}_deformed_rgb.png",
+        )
+        save_image(
+            undeformed["color"],
+            Path("for_paper") / f"image_{self.image_index:0>2}_undeformed_rgb.png",
+        )
+        save_image(
+            vis_normals(deformed["normal"]),
+            Path("for_paper") / f"image_{self.image_index:0>2}_deformed_normals.png",
+        )
+        save_image(
+            vis_normals(undeformed["normal"]),
+            Path("for_paper") / f"image_{self.image_index:0>2}_undeformed_normals.png",
         )
         self.image_index += 1
 
@@ -242,7 +260,7 @@ class ModelWrapper(LightningModule):
         # Render image in batches.
         num_rays = self.cfg.validation.num_rays
         bundle = zip(
-            origins[None].split(num_rays, dim=1),
+            tqdm(origins[None].split(num_rays, dim=1), "rendering deformed"),
             directions[None].split(num_rays, dim=1),
             near[None, :, 0].split(num_rays, dim=1),
             far[None, :, 0].split(num_rays, dim=1),
@@ -284,7 +302,7 @@ class ModelWrapper(LightningModule):
         output = {key: fix(value) for key, value in output.items()}
 
         # Render on white background.
-        # output["color"] = output["color"] + (1 - output["alpha"][:, None])
+        output["color"] = output["color"] + (1 - output["alpha"][:, None])
 
         return grid_coordinates, output
 
@@ -309,7 +327,10 @@ class ModelWrapper(LightningModule):
 
         # Render image in batches.
         num_rays = self.cfg.validation.num_rays
-        bundle = zip(origins.split(num_rays, dim=1), directions.split(num_rays, dim=1))
+        bundle = zip(
+            tqdm(origins.split(num_rays, dim=1), "rendering normal"),
+            directions.split(num_rays, dim=1),
+        )
         output = [
             apply_to_collection(
                 self.model(
@@ -343,7 +364,7 @@ class ModelWrapper(LightningModule):
         )
 
         # Render on white background.
-        # output["color"] = output["color"] + (1 - output["alpha"][:, None])
+        output["color"] = output["color"] + (1 - output["alpha"][:, None])
 
         return grid_coordinates, output
 

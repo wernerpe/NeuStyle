@@ -24,7 +24,9 @@
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [
-                "mode=render"
+                "mode=render",
+                "rendering.checkpoint=results/checkpoints/mic.ckpt",
+                "rendering.deformation=results/meshes_stylized/3.0/mic.pickle",
             ],
             "env": {
                 "CUDA_VISIBLE_DEVICES": "0",
@@ -49,7 +51,11 @@
             "module": "src.cubicstylization.main",
             "console": "integratedTerminal",
             "justMyCode": true,
-            "args": [],
+            "args": [
+                "input=results/meshes/teddy.stl",
+                "output=results/meshes_stylized/teddy.stl",
+                "output_package=results/meshes_stylized/teddy.pickle",
+            ],
             "env": {
                 "CUDA_VISIBLE_DEVICES": "0",
             }

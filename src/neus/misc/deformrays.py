@@ -4,6 +4,7 @@ import numpy as np
 import torch
 import trimesh
 from jaxtyping import Float, Int
+from tqdm import tqdm
 
 try:
     from pydrake.all import Rgba, StartMeshcat
@@ -62,7 +63,9 @@ def map_rays_to_neus(
     sampling_points_mat_undef = np.zeros(
         (r_o.shape[0], n_samples, 3)
     )  # csr_matrix(shape=(r_o.shape[0], n_samples, 3))
-    for tri_idx, ray_idx, intersection in zip(idx_tri, idx_ray, locs_int):
+    for tri_idx, ray_idx, intersection in zip(
+        idx_tri, idx_ray, tqdm(locs_int, desc="deforming rays")
+    ):
         closest_vert = np.argmin(np.linalg.norm(U - intersection.reshape(1, 3), axis=1))
         surface_offsets_along_normal = offset_mult * np.tile(
             r_d[ray_idx, :], (n_samples, 1)
