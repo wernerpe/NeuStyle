@@ -12,7 +12,7 @@ validation:
   batch_size: 4
   num_rays: 256
   num_workers: 0
-  interval: 256
+  interval: 128
   preview_image_scale: 0.2
 
 training:

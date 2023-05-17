@@ -20,4 +20,4 @@ class ValidationWrapper(Dataset):
         return self.length
 
     def __getitem__(self, index: int):
-        return self.dataset[randint(0, len(self.dataset) - 1)]
+        return self.dataset[28]

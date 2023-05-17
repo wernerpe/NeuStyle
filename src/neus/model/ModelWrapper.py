@@ -41,6 +41,7 @@ class ModelWrapper(LightningModule):
         super().__init__()
         self.cfg = cfg
         self.image_index = 0
+        self.ii = 0
 
         # Set up the model.
         (model_name,) = cfg.model.keys()
@@ -112,6 +113,16 @@ class ModelWrapper(LightningModule):
 
         visualization = pack([row_rgb, row_mask, row_extra], "b c * w")[0]
         visualization = visualization.clip(min=0, max=1)
+
+        a = predicted["normal"].norm(dim=1, keepdim=True)
+        save_image(
+            torch.cat(
+                [predicted["color"], a * predicted["normal"].abs() + (1 - a)], dim=-2
+            ),
+            Path("figs") / f"{self.ii:0>3}.png",
+        )
+
+        self.ii += 1
 
         self.logger.log_image(
             "comparison",
@@ -284,7 +295,7 @@ class ModelWrapper(LightningModule):
         output = {key: fix(value) for key, value in output.items()}
 
         # Render on white background.
-        # output["color"] = output["color"] + (1 - output["alpha"][:, None])
+        output["color"] = output["color"] + (1 - output["alpha"][:, None])
 
         return grid_coordinates, output
 
@@ -343,7 +354,7 @@ class ModelWrapper(LightningModule):
         )
 
         # Render on white background.
-        # output["color"] = output["color"] + (1 - output["alpha"][:, None])
+        output["color"] = output["color"] + (1 - output["alpha"][:, None])
 
         return grid_coordinates, output
 
