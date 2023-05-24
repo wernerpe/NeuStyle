@@ -133,7 +133,7 @@ class RaySegmentProjection(TypedDict):
     t_min: Float[Tensor, "camera ray"]  # ray parameter
     t_max: Float[Tensor, "camera ray"]  # ray parameter
     xy_min: Float[Tensor, "camera ray 2"]  # image-space xy (normalized to 0 to 1)
-    xy_min: Float[Tensor, "camera ray 2"]  # image-space xy (normalized to 0 to 1)
+    xy_max: Float[Tensor, "camera ray 2"]  # image-space xy (normalized to 0 to 1)
 
     # Whether the segment overlaps the image. If not, the above values are meaningless.
     overlaps_image: Bool[Tensor, "camera ray"]
