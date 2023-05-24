@@ -1,6 +1,6 @@
 # NeuStyle
 
-This repository was created as a final project for [Shape Analysis (6.8410) at MIT](https://groups.csail.mit.edu/gdpgroup/68410_spring_2023.html) by Peter Werner and David Charatan. Our final project presentation can be found [here](https://docs.google.com/presentation/d/1ws5GfBZHxouUavc_JZej0S6HG_d76FC7SZaEaBrifn4/edit?usp=sharing).
+This repository was created as a final project for [Shape Analysis (6.8410) at MIT](https://groups.csail.mit.edu/gdpgroup/68410_spring_2023.html) by Peter Werner and David Charatan. Our final project presentation can be found [here](https://docs.google.com/presentation/d/1ws5GfBZHxouUavc_JZej0S6HG_d76FC7SZaEaBrifn4/edit?usp=sharing) along with the report [here](NeuStyle.pdf).
 
 ## Overview
 
