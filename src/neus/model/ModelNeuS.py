@@ -5,7 +5,7 @@ from torch import Tensor, nn
 
 from ..misc.sampling import sample_along_rays
 from ..misc.volume_rendering import compute_volume_integral_weights
-from .components.PositionalEncoding import PositionalEncoding
+from .components.RandomSinusoidEncoding import RandomSinusoidEncoding
 
 
 class ModelNeuS(nn.Module):
@@ -14,7 +14,7 @@ class ModelNeuS(nn.Module):
     def __init__(self, cfg_model: DictConfig) -> None:
         super().__init__()
         self.cfg_model = cfg_model
-        self.positional_encoding = PositionalEncoding(**cfg_model.positional_encoding)
+        self.positional_encoding = RandomSinusoidEncoding(3, 1024, 8.0, 6)
         self.placeholder = nn.Sequential(
             nn.Linear(self.positional_encoding.d_out, 128),
             nn.ReLU(),
